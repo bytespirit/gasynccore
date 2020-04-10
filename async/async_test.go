@@ -21,7 +21,7 @@ func Test_BasicUsage(t *testing.T) {
 
 	go func(ctx context.Context, token Token) {
 		defer func() {
-			token.Done(nil)
+			token.Done()
 		}()
 		time.Sleep(time.Second)
 		value = 1

@@ -11,7 +11,7 @@ import "context"
 
 // Options defines the options used in WithAsync
 type Options interface {
-	AWait(token *AWaitToken) Options
+	Await(token *AwaitToken) Options
 	Tag(tag interface{}) Options
 }
 
@@ -26,7 +26,7 @@ func WithAsync(ctx context.Context, opts ...Options) (context.Context, Token) {
 		panic("Too many options")
 	}
 	var (
-		tokens []*AWaitToken
+		tokens []*AwaitToken
 		tag    interface{}
 	)
 
@@ -35,7 +35,7 @@ func WithAsync(ctx context.Context, opts ...Options) (context.Context, Token) {
 		tokens = append(tokens, o.awaitTokens...)
 		tag = o.tag
 	}
-	token := getAWaitToken(ctx)
+	token := getAwaitToken(ctx)
 	if token != nil {
 		tokens = append(tokens, token)
 	}
@@ -45,18 +45,18 @@ func WithAsync(ctx context.Context, opts ...Options) (context.Context, Token) {
 	return ctx, newToken(tokens, tag)
 }
 
-// WithAWait returns a context and wait token
-func WithAWait(ctx context.Context) (context.Context, *AWaitToken) {
-	return withAWaitToken(ctx)
+// WithAwait returns a context and wait token
+func WithAwait(ctx context.Context) (context.Context, *AwaitToken) {
+	return withAwaitToken(ctx)
 }
 
 type options struct {
-	awaitTokens []*AWaitToken
+	awaitTokens []*AwaitToken
 	tag         interface{}
 }
 
-// AWait adds an await token to the options
-func (o *options) AWait(token *AWaitToken) Options {
+// Await adds an await token to the options
+func (o *options) Await(token *AwaitToken) Options {
 	if token != nil {
 		for _, t := range o.awaitTokens {
 			if token == t {

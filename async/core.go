@@ -30,24 +30,24 @@ type Token interface {
 	SetError(error)
 }
 
-// AWaitToken is used to manage difference async job synchronous requirements
-type AWaitToken struct {
+// AwaitToken is used to manage difference async job synchronous requirements
+type AwaitToken struct {
 	m      sync.Mutex
 	wg     sync.WaitGroup
 	states []State
 }
 
 // Wait for the jobs which is connected to this token completed
-func (t *AWaitToken) Wait() []State {
+func (t *AwaitToken) Wait() []State {
 	t.wg.Wait()
 	return t.states
 }
 
-func (t *AWaitToken) add(n int) {
+func (t *AwaitToken) add(n int) {
 	t.wg.Add(n)
 }
 
-func (t *AWaitToken) done(err error, tag interface{}) {
+func (t *AwaitToken) done(err error, tag interface{}) {
 	t.m.Lock()
 	t.states = append(t.states, &state{err, tag})
 	t.m.Unlock()
@@ -56,27 +56,27 @@ func (t *AWaitToken) done(err error, tag interface{}) {
 
 type awaitTokenContextKey struct{}
 
-func getAWaitToken(ctx context.Context) *AWaitToken {
-	token, ok := ctx.Value(awaitTokenContextKey{}).(*AWaitToken)
+func getAwaitToken(ctx context.Context) *AwaitToken {
+	token, ok := ctx.Value(awaitTokenContextKey{}).(*AwaitToken)
 	if !ok {
 		return nil
 	}
 	return token
 }
 
-func withAWaitToken(ctx context.Context) (context.Context, *AWaitToken) {
-	var token AWaitToken
+func withAwaitToken(ctx context.Context) (context.Context, *AwaitToken) {
+	var token AwaitToken
 	return context.WithValue(ctx, awaitTokenContextKey{}, &token), &token
 }
 
 type token struct {
-	awaitTokens []*AWaitToken
+	awaitTokens []*AwaitToken
 	done        bool
 	err         error
 	tag         interface{}
 }
 
-func newToken(awaitTokens []*AWaitToken, tag interface{}) *token {
+func newToken(awaitTokens []*AwaitToken, tag interface{}) *token {
 	return &token{awaitTokens: awaitTokens, tag: tag}
 }
 

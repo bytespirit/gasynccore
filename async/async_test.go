@@ -15,7 +15,7 @@ import (
 )
 
 func Test_BasicUsage(t *testing.T) {
-	ctx, awaitToken := WithAWait(context.Background())
+	ctx, awaitToken := WithAwait(context.Background())
 
 	value := 0
 
@@ -40,7 +40,7 @@ func Test_BasicUsage(t *testing.T) {
 }
 
 func Test_WithoutAsync(t *testing.T) {
-	ctx, awaitToken := WithAWait(context.Background())
+	ctx, awaitToken := WithAwait(context.Background())
 
 	value := 0
 
@@ -59,11 +59,11 @@ func Test_WithoutAsync(t *testing.T) {
 }
 
 func Test_WithTagErrorAndToken(t *testing.T) {
-	ctx, _ := WithAWait(context.Background())
+	ctx, _ := WithAwait(context.Background())
 
 	var (
 		value       int
-		awaitToken2 AWaitToken
+		awaitToken2 AwaitToken
 	)
 
 	go func(ctx context.Context, token Token) {
@@ -72,7 +72,7 @@ func Test_WithTagErrorAndToken(t *testing.T) {
 		}()
 		time.Sleep(time.Second)
 		value = 1
-	}(WithAsync(ctx, WithOptions().AWait(&awaitToken2).Tag(666)))
+	}(WithAsync(ctx, WithOptions().Await(&awaitToken2).Tag(666)))
 
 	states := awaitToken2.Wait()
 	if len(states) != 1 {

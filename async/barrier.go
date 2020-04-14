@@ -91,7 +91,7 @@ func (b *ConcurrentBarrier) newRunning(ctx context.Context, opts ...Option) (con
 	if b.closed {
 		return nil, nil, false
 	}
-	opts = append(opts, Await(&b.await), cno(b.no), doneCallback(func(t Token) {
+	opts = append(opts, Await(&b.await), cno(b.no), doneCallback(func(*token) {
 		b.ch <- struct{}{}
 	}))
 	b.no++

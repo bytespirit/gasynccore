@@ -32,8 +32,12 @@ func WithAsync(ctx context.Context, opts ...Option) (context.Context, Token) {
 }
 
 // WithAwait returns a context and wait token
-func WithAwait(ctx context.Context) (context.Context, *AwaitToken) {
-	return withAwaitToken(ctx)
+func WithAwait(ctx context.Context, opts ...Option) (context.Context, *AwaitToken) {
+	var o options
+	for _, opt := range opts {
+		opt.apply(&o)
+	}
+	return withAwaitToken(ctx, o.doneCallback)
 }
 
 // Option defines the option used in WithAsync
@@ -45,7 +49,7 @@ type options struct {
 	awaitTokens  []*AwaitToken
 	tag          interface{}
 	cno          int // Concurrent number
-	doneCallback func(Token)
+	doneCallback func(*token)
 }
 
 type funcOption struct {
@@ -82,7 +86,7 @@ func cno(cno int) Option {
 	})
 }
 
-func doneCallback(cb func(Token)) Option {
+func doneCallback(cb func(*token)) Option {
 	return newFuncOption(func(o *options) {
 		o.doneCallback = cb
 	})

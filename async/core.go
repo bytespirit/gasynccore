@@ -33,11 +33,18 @@ type Token interface {
 	ConcurrentNum() int
 }
 
+//
+//
+// AwaitToken
+//
+//
+
 // AwaitToken is used to manage difference async job synchronous requirements
 type AwaitToken struct {
-	m      sync.Mutex
-	wg     sync.WaitGroup
-	states []State
+	m            sync.Mutex
+	wg           sync.WaitGroup
+	states       []State
+	doneCallback func(*token)
 }
 
 // Wait for the jobs which is connected to this token completed
@@ -50,11 +57,14 @@ func (t *AwaitToken) add(n int) {
 	t.wg.Add(n)
 }
 
-func (t *AwaitToken) done(err error, tag interface{}) {
+func (t *AwaitToken) done(tk *token) { //err error, tag interface{}) {
 	t.m.Lock()
-	t.states = append(t.states, &state{err, tag})
+	t.states = append(t.states, &state{tk.err, tk.tag})
 	t.m.Unlock()
 	t.wg.Done()
+	if t.doneCallback != nil {
+		t.doneCallback(tk)
+	}
 }
 
 type awaitTokenContextKey struct{}
@@ -67,10 +77,18 @@ func getAwaitToken(ctx context.Context) *AwaitToken {
 	return token
 }
 
-func withAwaitToken(ctx context.Context) (context.Context, *AwaitToken) {
-	var token AwaitToken
+func withAwaitToken(ctx context.Context, doneCallback func(*token)) (context.Context, *AwaitToken) {
+	token := AwaitToken{
+		doneCallback: doneCallback,
+	}
 	return context.WithValue(ctx, awaitTokenContextKey{}, &token), &token
 }
+
+//
+//
+// Token
+//
+//
 
 type token struct {
 	awaitTokens  []*AwaitToken
@@ -78,10 +96,10 @@ type token struct {
 	err          error
 	tag          interface{}
 	cno          int
-	doneCallback func(Token)
+	doneCallback func(*token)
 }
 
-func newToken(awaitTokens []*AwaitToken, tag interface{}, cno int, doneCallback func(Token)) *token {
+func newToken(awaitTokens []*AwaitToken, tag interface{}, cno int, doneCallback func(*token)) *token {
 	return &token{awaitTokens: awaitTokens, tag: tag, cno: cno, doneCallback: doneCallback}
 }
 
@@ -95,7 +113,7 @@ func (t *token) Done(errs ...error) {
 		}
 	}
 	for _, token := range t.awaitTokens {
-		token.done(t.err, t.tag)
+		token.done(t)
 	}
 	t.done = true
 	if t.doneCallback != nil {

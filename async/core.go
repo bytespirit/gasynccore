@@ -28,6 +28,9 @@ type Token interface {
 	//	last non-nil error will be saved
 	// NOTE: This method will not mark the job is done.
 	SetError(error)
+	// Get the conncurent number of this async job
+	//	0 will be returned if not in an concurent context
+	ConcurrentNum() int
 }
 
 // AwaitToken is used to manage difference async job synchronous requirements
@@ -70,14 +73,16 @@ func withAwaitToken(ctx context.Context) (context.Context, *AwaitToken) {
 }
 
 type token struct {
-	awaitTokens []*AwaitToken
-	done        bool
-	err         error
-	tag         interface{}
+	awaitTokens  []*AwaitToken
+	done         bool
+	err          error
+	tag          interface{}
+	cno          int
+	doneCallback func(Token)
 }
 
-func newToken(awaitTokens []*AwaitToken, tag interface{}) *token {
-	return &token{awaitTokens: awaitTokens, tag: tag}
+func newToken(awaitTokens []*AwaitToken, tag interface{}, cno int, doneCallback func(Token)) *token {
+	return &token{awaitTokens: awaitTokens, tag: tag, cno: cno, doneCallback: doneCallback}
 }
 
 func (t *token) Done(errs ...error) {
@@ -93,12 +98,20 @@ func (t *token) Done(errs ...error) {
 		token.done(t.err, t.tag)
 	}
 	t.done = true
+	if t.doneCallback != nil {
+		t.doneCallback(t)
+	}
 }
 
 func (t *token) SetError(err error) {
 	if err != nil {
 		t.err = err
 	}
+}
+
+// Get the conncurent number of this async job
+func (t *token) ConcurrentNum() int {
+	return t.cno
 }
 
 type state struct {

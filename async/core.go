@@ -9,6 +9,7 @@ package async
 
 import (
 	"context"
+	"strings"
 	"sync"
 )
 
@@ -51,6 +52,21 @@ type AwaitToken struct {
 func (t *AwaitToken) Wait() []State {
 	t.wg.Wait()
 	return t.states
+}
+
+// WaitError waits for the jobs which is connected to this token completed and returns error
+func (t *AwaitToken) WaitError() error {
+	t.wg.Wait()
+	var errs []error
+	for _, state := range t.states {
+		if state.Error() != nil {
+			errs = append(errs, state.Error())
+		}
+	}
+	if len(errs) > 0 {
+		return newCompoundError(errs...)
+	}
+	return nil
 }
 
 func (t *AwaitToken) add(n int) {
@@ -143,4 +159,34 @@ func (s *state) Error() error {
 
 func (s *state) Tag() interface{} {
 	return s.tag
+}
+
+//
+//
+// Error
+//
+//
+
+// CompoundError defines the compound error
+type CompoundError struct {
+	s    string
+	errs []error
+}
+
+func newCompoundError(err ...error) *CompoundError {
+	var errStrs []string
+	for _, e := range err {
+		errStrs = append(errStrs, e.Error())
+	}
+	return &CompoundError{strings.Join(errStrs, "\n"), err}
+}
+
+// Errors returns the errors
+func (e *CompoundError) Errors() []error {
+	return e.errs
+}
+
+// Errors returns the error
+func (e *CompoundError) Error() string {
+	return e.s
 }
